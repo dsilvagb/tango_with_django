@@ -35,16 +35,27 @@ def about(request):
 
 def show_category(request, category_name_slug):
     context_dict = {}
+    result_list = []
+    query = ""
 
     try:
         category = Category.objects.get(slug=category_name_slug)
-        pages = Page.objects.filter(category=category)
+        pages = Page.objects.filter(category=category).order_by('-views')
         context_dict['pages'] = pages
         context_dict['category'] = category
+        category.views = category.views + 1
+        category.save()
     except Category.DoesNotExist:
         context_dict['category'] = None
         context_dict['pages'] = None
 
+    if request.method == 'POST':
+        query = request.POST['query'].strip()
+        if query:
+            result_list = run_query(query)
+
+    context_dict['result_list'] = result_list
+    context_dict['query'] = query
     return render(request, 'rango/category.html', context=context_dict)
 
 @login_required
@@ -115,7 +126,7 @@ def visitor_cookie_handler(request):
 
     request.session['visits'] = visits
 
-def search(request):
+""" def search(request):
     result_list = []
     query = ""
 
@@ -126,3 +137,29 @@ def search(request):
     
     context_dict = {'result_list': result_list, 'query': query}        
     return render(request, 'rango/search.html', context=context_dict)
+ """
+ 
+def goto_url(request):
+    page_id = None
+
+    if request.method == 'GET':
+        page_id = request.GET.get('page_id')
+        try:
+            page = Page.objects.get(id=page_id)
+            page.views =  page.views + 1
+            page.save()
+            return redirect(page.url)
+        except Page.DoesNotExist:
+            return redirect('/rango/')
+
+
+
+    
+        
+    
+
+
+    
+
+
+
